@@ -3,7 +3,7 @@
   <arg name="paused" default="false" />
   <!--arg name="gzangles" default="-J JOINT0 -0.2" / use with paused -->
   <arg name="gzangles" default="" />
-  <arg name="gzpose" default=" -z 0.6" />
+  <arg name="gzpose" default=" -z 0.3 -P -1.57" />
   <arg name="control_config" default="$(arg model).gz_controller.yaml" />
 
   <include file="$(find gazebo_ros)/launch/empty_world.launch" >
