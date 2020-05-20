@@ -69,7 +69,7 @@ sensors:
   # - {sensor_name: 'headsensor', sensor_type: 'base_force6d', parent_link: 'LINK8', gazebo_joint: 'JOINT8', gazebo_topic: 'headsensor'}
   ##depth_camera
   - {sensor_name: 'head_depth_cam', sensor_type: 'camera', gazebo_type: 'depth', parent_link: 'LINK8',
-     translate: '-0.0 0 0', rotate: '-0.57735 -0.57735 0.57735 120'}
+     translate: '-0.0 0 0', rotate: '-0.57735 -0.57735 0.57735 0'}
   #LINK7 120
   #camera
   # - {sensor_name: 'head_cam', sensor_type: 'camera', parent_link: 'LINK7',
