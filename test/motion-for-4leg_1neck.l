@@ -8,9 +8,9 @@
 (objects (list *robot*))
 
 (setq *plain-pose* (send *robot* :init-pose))
-(setf (elt *plain-pose* 10) 90)
+(setf (elt *plain-pose* 10) -90)
 (setf (elt *plain-pose* 16) -90)
-(setf (elt *plain-pose* 22) -90)
+(setf (elt *plain-pose* 22) 90)
 (setf (elt *plain-pose* 28) 90)
 (send *robot* :angle-vector *plain-pose*)
 
