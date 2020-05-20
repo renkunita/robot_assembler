@@ -136,8 +136,7 @@
     <joint name="${frame}_fixed_joint" type="fixed">
       <parent link="${link_name}"/>
       <child link="${frame}"/>
-      <origin xyz="-0.01 0 0" rpy="0 0 -1.578"/>
-      <!-- <origin xyz="${xyz}" rpy="${rpy}"/> -->
+      <origin xyz="${xyz}" rpy="${rpy}"/>
     </joint>
     <gazebo reference="${link_name}">
       <sensor name="${link_name}_depth_camera" type="depth">
