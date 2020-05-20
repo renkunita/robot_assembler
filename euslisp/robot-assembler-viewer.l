@@ -2,7 +2,7 @@
 
 (ros::roseus-add-srvs "std_srvs")
 
-(defun make-robot-asselbler-viewer (&key (width 1200) (height 900))
+(defun make-robot-assemler-viewer (&key (width 1200) (height 900))
   ;;
   (setq *robot-assembler-viewer*
         (instance robot-assembler-viewer :create
