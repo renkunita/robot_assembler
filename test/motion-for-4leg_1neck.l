@@ -2,6 +2,9 @@
 
 (load "package://robot_assembler/test/4leg_1neck_robot.l")
 (load "package://robot_assembler/euslisp/assembled-robot-interface.l")
+(ros::roseus-add-msgs "jsk_recognition_msgs")
+(ros::roseus-add-msgs "std_msgs")
+
 
 (assembled-robot-init)
 
@@ -20,7 +23,7 @@
 
 (defun ik(limb fv)
   (let* ((num-list (list 15 21 27 33))
-         (p (position limb (list :bl :br :fl :fr)))
+         (p (position limb (list :br :fl :fr :bl)))
          (num (nth p num-list))
          )
   
@@ -33,6 +36,14 @@
         ;; :rotation-axis t
         )
   ))
+
+(defun ikc()
+  (send *robot* :inverse-kinematics
+        (send (send *robot* :rarm :end-coords :copy-worldcoords) :translate (float-vector 0 0 20) :world)
+        :move-target (send *robot* :rarm :end-coords)
+        :link-list (send *robot* :link-list (send (send *robot* :rarm :end-coords) :parent)))
+  )
+
 
 (defun head-set()
   (send *robot* :init-pose)
@@ -74,7 +85,7 @@
   )
 
 
-(defun neck-rot(&optional (theta 180))
+(defun neck-rot(&optional (theta 178))
   (let* ((f (send *robot* :angle-vector))
          )
     (setf (elt f 0) theta)
@@ -92,32 +103,48 @@
     )
   )
 
-
-
-(defun put-on-back()
-  (head-set)
-  (head-open)
+(defun look-forward()
+  (send *robot* :init-pose)
+  (neck-rot);;
+  (setq c (make-cascoords :pos (v+ #f(-350 0 160) (send (nth 9 (send *robot* :links)) :worldpos))
+                          :rot (rpy-matrix 0 -2.0 1.57)))
+  (send *robot* :inverse-kinematics c
+        :link-list (send *robot* :link-list (send (nth 9 (send *robot* :links)) :parent))
+        :move-target (nth 9 (send *robot* :links))
+        )
   (send *ri* :angle-vector (send *robot* :angle-vector) 3000)
-
-  (head-close)
-  (send *ri* :angle-vector (send *robot* :angle-vector) 10000)
-  (send *ri* :wait-interpolation)
-
-  (head-up)
-  (head-close)
-  (send *ri* :angle-vector (send *robot* :angle-vector) 30000)
-  (send *ri* :wait-interpolation)
-
-  (neck-rot 0)
-  (neck-back)
-  (head-close -20)
-  (send *ri* :angle-vector (send *robot* :angle-vector) 30000)
-  (send *ri* :wait-interpolation)
-
-  (head-open)
-  (send *ri* :angle-vector (send *robot* :angle-vector) 10000)
-  (send *ri* :wait-interpolation)
   )
+
+(defun look-forward2()
+  (send *robot* :init-pose)
+  (send *robot* :angle-vector #f(0.0 0.0 0.0 60.0 0.0 90.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0))
+  (send *ri* :angle-vector (send *robot* :angle-vector) 3000)
+  )
+
+;; (defun put-on-back()
+;;   (head-set)
+;;   (head-open)
+;;   (send *ri* :angle-vector (send *robot* :angle-vector) 3000)
+
+;;   (head-close)
+;;   (send *ri* :angle-vector (send *robot* :angle-vector) 10000)
+;;   (send *ri* :wait-interpolation)
+
+;;   (head-up)
+;;   (head-close)
+;;   (send *ri* :angle-vector (send *robot* :angle-vector) 30000)
+;;   (send *ri* :wait-interpolation)
+
+;;   (neck-rot 0)
+;;   (neck-back)
+;;   (head-close -20)
+;;   (send *ri* :angle-vector (send *robot* :angle-vector) 30000)
+;;   (send *ri* :wait-interpolation)
+
+;;   (head-open)
+;;   (send *ri* :angle-vector (send *robot* :angle-vector) 10000)
+;;   (send *ri* :wait-interpolation)
+;;   )
   
 
 (defun re()
@@ -154,10 +181,13 @@
      )
    ))
 
-(defun walk2()
+(defun walk2();;only leg
   (send *robot* :newcoords (make-coords))
   (do-until-key
-   (send *robot* :init-pose)
+   (send *robot* :larm :angle-vector #f(0 0 0 0 0 0))
+   (send *robot* :rarm :angle-vector #f(0 0 0 0 0 0))
+   (send *robot* :lleg :angle-vector #f(0 0 0 0 0 0))
+   (send *robot* :rleg :angle-vector #f(0 0 0 0 0 0))
    (ik :fr #f(10 0 20))
    (ik :fl #f(10 0 20))
    (ik :br #f(10 0 -20))
@@ -173,3 +203,98 @@
      (send *ri* :wait-interpolation)
      )
    ))
+
+;;;;
+(defvar *obj-bbox* nil)
+(defun obj_bbox_callback (msg)
+  (let* ((ob (make-cube 100 100 100))
+         pos x y z
+         )
+    (if (> (length (send msg :boxes)) 0)
+        (progn
+          (setq *obj-bbox* (car (last (send msg :boxes))))
+          (setq pos (send *obj-bbox* :pose :position))
+          (setq x (send pos :x))
+          (setq y (send pos :y))
+          (setq z (send pos :z))
+          (format t "obj-bbox x: ~A y: ~A z: ~A~%" x y z)
+          (send ob :translate (scale 1000 (float-vector x y z)))
+          (objects (list *robot* ob))
+          ))
+    ))
+
+(defun obj-bbox-spin-once nil
+  (ros::rate 100)
+  (setq *obj-bbox* nil)
+  (while (not *obj-bbox*)
+    (ros::spin-once)
+    (ros::sleep)))
+
+(ros::subscribe "/rgbcolorfilter/boxes"
+                jsk_recognition_msgs::BoundingBoxArray
+                #'obj_bbox_callback)
+
+
+(defun go-to-obj()
+  (look-forward2)
+  (obj-bbox-spin-once)
+  (while (> (- (send *obj-bbox* :pose :position :z)
+               (* 0.5 (send *obj-bbox* :dimensions :z))
+               )
+            0.38
+            )
+       (send *robot* :larm :angle-vector #f(0 0 0 0 0 0))
+       (send *robot* :rarm :angle-vector #f(0 0 0 0 0 0))
+       (send *robot* :lleg :angle-vector #f(0 0 0 0 0 0))
+       (send *robot* :rleg :angle-vector #f(0 0 0 0 0 0))
+       (ik :fr #f(10 0 20))
+       (ik :fl #f(10 0 20))
+       (ik :br #f(10 0 -20))
+       (ik :bl #f(10 0 -20))
+       (send *ri* :angle-vector (send *robot* :angle-vector) 100)
+       (send *ri* :wait-interpolation)
+       (dolist (limb (list :fr :bl :fl :br))
+         (ik limb #f(10 0 20))
+         (send *ri* :angle-vector (send *robot* :angle-vector) 100)
+         (send *ri* :wait-interpolation)
+         (ik limb #f(-10 0 0))
+         (send *ri* :angle-vector (send *robot* :angle-vector) 100)
+         (send *ri* :wait-interpolation)
+         )
+       (obj-bbox-spin-once)
+       )
+  )
+
+(defun pick-and-place()
+
+  (send *robot* :angle-vector #f(0.0 90.0 0.0 40.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0))
+  (send *ri* :angle-vector (send *robot* :angle-vector) 5000)
+  (send *ri* :wait-interpolation)
+  
+  (head-close)
+  (send *ri* :angle-vector (send *robot* :angle-vector) 5000)
+  (send *ri* :wait-interpolation)
+
+  (send *robot* :angle-vector #f(0.0 0.0 0.0 40.0 0.0 40.0 0.0 0.0 -30.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0))
+  (send *ri* :angle-vector (send *robot* :angle-vector) 5000)
+  (send *ri* :wait-interpolation)
+
+  (neck-rot)
+  (send *ri* :angle-vector (send *robot* :angle-vector) 10000)
+  (send *ri* :wait-interpolation)
+
+  (send *robot* :angle-vector #f(178.0 0.0 0.0 10.0 0.0 90.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0))
+  (send *ri* :angle-vector (send *robot* :angle-vector) 3000)
+  (send *ri* :wait-interpolation)
+
+  (send *robot* :angle-vector #f(178.0 0.0 0.0 40.0 0.0 90.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0))
+  (send *ri* :angle-vector (send *robot* :angle-vector) 3000)
+  (send *ri* :wait-interpolation)
+  
+  
+  )
+
+(defun demo()
+  (go-to-obj)
+  (pick-and-place)
+  )

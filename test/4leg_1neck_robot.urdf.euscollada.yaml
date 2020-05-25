@@ -42,20 +42,20 @@ rarm:
 ## end-coords
 lleg-end-coords:
   parent : LINK14
-  translate : [0, 0.032, 0.019]
-  rotate : [0.57735, -0.57735, 0.57735, 120.0]
+  translate : [0, -0.055, 0.0]
+  rotate : [1, 0, 0, 0.0]
 rleg-end-coords:
   parent : LINK20
-  translate : [0, 0.032, 0.019]
-  rotate : [0.57735, -0.57735, 0.57735, 120.0]
+  translate : [0, -0.055, 0.0]
+  rotate : [1, 0, 0, 0.0]
 larm-end-coords:
   parent : LINK26
-  translate : [0, 0.032, 0.019]
-  rotate : [0.57735, -0.57735, 0.57735, 120.0]
+  translate : [0, -0.055, 0.0]
+  rotate : [1, 0, 0, 0.0]
 rarm-end-coords:
   parent : LINK32
-  translate : [0, 0.032, 0.019]
-  rotate : [0.57735, -0.57735, 0.57735, 120.0]
+  translate : [-0.0,-0.055, 0]
+  rotate : [1, 0, 0, 0.0]
 head-end-coords:
   parent : LINK8
 
@@ -70,7 +70,6 @@ sensors:
   ##depth_camera
   - {sensor_name: 'head_depth_cam', sensor_type: 'camera', gazebo_type: 'depth', parent_link: 'LINK8',
      translate: '-0.0 0 0', rotate: '-0.57735 -0.57735 0.57735 0'}
-  #LINK7 120
   #camera
   # - {sensor_name: 'head_cam', sensor_type: 'camera', parent_link: 'LINK7',
   #    translate: '-0.0 0 0', rotate: '-0.57735 -0.57735 0.57735 120'}

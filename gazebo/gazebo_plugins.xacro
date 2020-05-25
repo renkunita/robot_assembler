@@ -137,13 +137,13 @@
     </gazebo>
   </xacro:macro>
   <!-- -->
-  <xacro:macro name="add_gazebo_depth_camera" params="link_name camera_name:=depth_camera_n frame:=depth_frame pose:='0 0 0 0 0 0' xyz:='0 0 0' rpy:='0 0 0' rate:=30.0 width:=800 height:=600 fov:=1.578" >
+  <xacro:macro name="add_gazebo_depth_camera" params="link_name camera_name:=depth_camera frame:=depth_frame pose:='0 0 0 0 0 0' xyz:='0 0 0' rpy:='0 0 0' rate:=30.0 width:=800 height:=600 fov:=1.578" >
     <!-- create camera frame-->
     <link name="${frame}" />
     <joint name="${frame}_fixed_joint" type="fixed">
       <parent link="${link_name}"/>
       <child link="${frame}"/>
-      <origin xyz="-0.01 0 0" rpy="0 0 -1.578"/>
+      <origin xyz="-0.01 0 0" rpy="-1.578 0 -1.578"/>
       <!-- <origin xyz="${xyz}" rpy="${rpy}"/> -->
     </joint>
     <gazebo reference="${link_name}">
@@ -159,7 +159,7 @@
             <height>${height}</height>
             <format>R8G8B8</format>
           </image>
-          <clip near="1" far="100.0" />
+          <clip near="0.01" far="100.0" />
           <save enabled="false" path="/tmp" />
           <depth_camera output="points" />
         </camera>
