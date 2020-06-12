@@ -1,0 +1,7 @@
+
+(load "test.l")
+(load "package://robot_assembler/euslisp/assembled-robot-interface.l")
+
+(assembled-robot-init)
+
+(objects (list *robot*))

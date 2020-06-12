@@ -84,7 +84,7 @@
     </gazebo>
   </xacro:macro>
   <!-- -->
-  <xacro:macro name="add_gazebo_camera" params="link_name camera_name=camera frame:=camera_frame pose:='0 0 0 0 0 0' xyz:='0 0 0' rpy:='0 0 0' rate:=30.0 width:=800 height:=600 fov:=1.578" >
+  <xacro:macro name="add_gazebo_camera" params="link_name camera_name:=camera_n frame:=camera_frame pose:='0 0 0 0 0 0' xyz:='0 0 0' rpy:='0 0 0' rate:=30.0 width:=800 height:=600 fov:=1.578" >
     <!-- create camera frame-->
     <link name="${frame}" />
     <joint name="${frame}_fixed_joint" type="fixed">
@@ -107,7 +107,7 @@
             <format>R8G8B8</format>
           </image>
           <clip>
-            <near>0.02</near>
+            <near>10</near>
             <far>300</far>
           </clip>
           <noise>
@@ -137,16 +137,17 @@
     </gazebo>
   </xacro:macro>
   <!-- -->
-  <xacro:macro name="add_gazebo_depth_camera" params="link_name camera_name frame:=depth_frame pose:='0 0 0 0 0 0' xyz:='0 0 0' rpy:='0 0 0' rate:=30.0 width:=800 height:=600 fov:=1.578" >
+  <xacro:macro name="add_gazebo_depth_camera" params="link_name camera_name:=depth_camera frame:=depth_frame pose:='0 0 0 0 0 0' xyz:='0 0 0' rpy:='0 0 0' rate:=30.0 width:=800 height:=600 fov:=1.578" >
     <!-- create camera frame-->
     <link name="${frame}" />
     <joint name="${frame}_fixed_joint" type="fixed">
       <parent link="${link_name}"/>
       <child link="${frame}"/>
-      <origin xyz="${xyz}" rpy="${rpy}"/>
+      <origin xyz="-0.01 0 0" rpy="-1.578 0 -1.578"/>
+      <!-- <origin xyz="${xyz}" rpy="${rpy}"/> -->
     </joint>
     <gazebo reference="${link_name}">
-      <sensor name="${link_nake}_depth_camera" type="depth">
+      <sensor name="${link_name}_depth_camera" type="depth">
         <pose>${pose}</pose>
         <always_on>true</always_on>
         <update_rate>${rate}</update_rate>
