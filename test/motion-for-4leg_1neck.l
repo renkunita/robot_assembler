@@ -249,7 +249,10 @@
   (send *ri* :angle-vector (send *robot* :angle-vector) 100)
   (send *ri* :wait-interpolation)
 
-  (head-open 0)
+  (head-close 0)
+  (send *ri* :angle-vector (send *robot* :angle-vector) 100)
+  (send *ri* :wait-interpolation)
+  
   
   )
 
