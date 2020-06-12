@@ -6,7 +6,7 @@
   <!-- <arg name="gzpose" default=" -z 0.3 -P -1.57" /> -->
   <arg name="gzpose" default=" -z 0.3" />
   <arg name="control_config" default="$(arg model).gz_controller.yaml" />
-  <arg name="world_name" default="worlds/empty.world" />
+  <arg name="world_name" default="/home/kunita/robot_assembler_ws/src/robot_assembler/gazebo/worlds/table_manipulation.world" />
   <arg name="use_xacro" default="false" />
 
   <include file="$(find gazebo_ros)/launch/empty_world.launch" >
