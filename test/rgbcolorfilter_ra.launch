@@ -1,6 +1,18 @@
 
 <launch>
 
+  <node name="rosconsole_overlay_text"
+        pkg="jsk_rviz_plugins" type="rosconsole_overlay_text.py">
+    <rosparam>
+      nodes:
+      - /robotassembler
+    </rosparam>
+  </node>
+  <node name="rviz"
+        pkg="rviz" type="rviz"
+        args="-d $(find robot_assembler)/test/robot_assembler.rviz">
+  </node>
+  
 
   <!-- rgb color filter -->
   <group ns="rgbcolorfilter">

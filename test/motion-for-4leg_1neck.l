@@ -1,10 +1,8 @@
 
-
 (load "package://robot_assembler/test/4leg_1neck_robot.l")
 (load "package://robot_assembler/euslisp/assembled-robot-interface.l")
 (ros::roseus-add-msgs "jsk_recognition_msgs")
 (ros::roseus-add-msgs "std_msgs")
-
 
 (assembled-robot-init)
 
@@ -37,54 +35,9 @@
         )
   ))
 
-(defun ikc()
-  (send *robot* :inverse-kinematics
-        (send (send *robot* :rarm :end-coords :copy-worldcoords) :translate (float-vector 0 0 20) :world)
-        :move-target (send *robot* :rarm :end-coords)
-        :link-list (send *robot* :link-list (send (send *robot* :rarm :end-coords) :parent)))
-  )
-
-(defun head-ik()
-  (send *robot* :inverse-kinematics
-        (send (send *robot* :head :end-coords :copy-worldcoords) :translate (float-vector 0 0 20) :world)
-        :move-target (send *robot* :head :end-coords)
-        :link-list (send *robot* :link-list (send (send *robot* :head :end-coords) :parent)))
-  )
 
 
-
-(defun head-set()
-  (send *robot* :init-pose)
-  (neck-rot);;
-  (setq c (make-cascoords :pos (v+ #f(-350 0 160) (send (nth 9 (send *robot* :links)) :worldpos))
-                          :rot (rpy-matrix 0 -2.6 1.57)))
-  (send *robot* :inverse-kinematics c
-        :link-list (send *robot* :link-list (send (nth 9 (send *robot* :links)) :parent))
-        :move-target (nth 9 (send *robot* :links))
-        )
-  )
-
-(defun head-up()
-  (send *robot* :init-pose)
-  (neck-rot);;
-  (setq c (make-cascoords :pos (v+ #f(0 0 150) (send (nth 9 (send *robot* :links)) :worldpos))
-                          :rot (rpy-matrix 0 -1.0 1.57)))
-  (send *robot* :inverse-kinematics c
-        :link-list (send *robot* :link-list (send (nth 9 (send *robot* :links)) :parent))
-        :move-target (nth 9 (send *robot* :links))
-        )
-  )
-
-
-(defun head-open(&optional (theta 50))
-  (let* ((f (send *robot* :angle-vector))
-         )
-    (setf (elt f 8) theta)
-    (send *robot* :angle-vector f)
-    )
-  )
-
-(defun head-close(&optional (theta -30))
+(defun head-open-close (&optional (theta 50))
   (let* ((f (send *robot* :angle-vector))
          )
     (setf (elt f 8) theta)
@@ -97,16 +50,6 @@
   (let* ((f (send *robot* :angle-vector))
          )
     (setf (elt f 0) theta)
-    (send *robot* :angle-vector f)
-    )
-  )
-
-(defun neck-back()
-  (let* ((f (send *robot* :angle-vector))
-         )
-    (setf (elt f 1) 0)
-    (setf (elt f 3) 0)
-    (setf (elt f 5) -90)
     (send *robot* :angle-vector f)
     )
   )
@@ -135,68 +78,18 @@
   (send *ri* :angle-vector (send *robot* :angle-vector) 3000)
   )
 
-
-;; (defun put-on-back()
-;;   (head-set)
-;;   (head-open)
-;;   (send *ri* :angle-vector (send *robot* :angle-vector) 3000)
-
-;;   (head-close)
-;;   (send *ri* :angle-vector (send *robot* :angle-vector) 10000)
-;;   (send *ri* :wait-interpolation)
-
-;;   (head-up)
-;;   (head-close)
-;;   (send *ri* :angle-vector (send *robot* :angle-vector) 30000)
-;;   (send *ri* :wait-interpolation)
-
-;;   (neck-rot 0)
-;;   (neck-back)
-;;   (head-close -20)
-;;   (send *ri* :angle-vector (send *robot* :angle-vector) 30000)
-;;   (send *ri* :wait-interpolation)
-
-;;   (head-open)
-;;   (send *ri* :angle-vector (send *robot* :angle-vector) 10000)
-;;   (send *ri* :wait-interpolation)
-;;   )
-  
+(defun look-forward4()
+  (send *robot* :angle-vector #f(-90.0 0.0 -80.0 50.0 0.0 60.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0))
+  (send *ri* :angle-vector (send *robot* :angle-vector) 3000)
+  )
 
 (defun re()
   (send *robot* :init-pose)
-  (send *ri* :angle-vector (send *robot* :angle-vector) 100)
+  (send *ri* :angle-vector (send *robot* :angle-vector) 1000)
+  (send *ri* :wait-interpolation)
   )
 
-;;*walk-pose*
-(send *robot* :init-pose)
-(ik :fr #f(10 0 20))
-(ik :fl #f(10 0 20))
-(ik :br #f(10 0 -20))
-(ik :bl #f(10 0 -20))
-(setq *walk-pose* (send *robot* :angle-vector))
-(setf (elt *walk-pose* 1) -88)
-(setf (elt *walk-pose* 3) 0);;90
-(setf (elt *walk-pose* 5) 0);;90
-(send *robot* :angle-vector *walk-pose*)
-
-
-(defun walk()
-  (send *robot* :newcoords (make-coords))
-  (do-until-key
-   (send *robot* :angle-vector *walk-pose*)
-   (send *ri* :angle-vector (send *robot* :angle-vector) 100)
-   (send *ri* :wait-interpolation)
-   (dolist (limb (list :fr :bl :fl :br))
-     (ik limb #f(10 0 20))
-     (send *ri* :angle-vector (send *robot* :angle-vector) 100)
-     (send *ri* :wait-interpolation)
-     (ik limb #f(-10 0 0))
-     (send *ri* :angle-vector (send *robot* :angle-vector) 100)
-     (send *ri* :wait-interpolation)
-     )
-   ))
-
-(defun walk2();;only leg
+(defun walk();;一足ずつ移動
   (send *robot* :newcoords (make-coords))
   (do-until-key
    (send *robot* :larm :angle-vector #f(0 0 0 0 0 0))
@@ -219,56 +112,180 @@
      )
    ))
 
+(defun walk2();;対角の足を同時に動かす
+  (send *robot* :newcoords (make-coords))
+  (do-until-key
+   (send *robot* :larm :angle-vector #f(0 0 0 0 0 0))
+   (send *robot* :rarm :angle-vector #f(0 0 0 0 0 0))
+   (send *robot* :lleg :angle-vector #f(0 0 0 0 0 0))
+   (send *robot* :rleg :angle-vector #f(0 0 0 0 0 0))
+   (ik :fr #f(10 0 20))
+   (ik :fl #f(10 0 20))
+   (ik :br #f(10 0 -20))
+   (ik :bl #f(10 0 -20))
+   (send *ri* :angle-vector (send *robot* :angle-vector) 100)
+   (send *ri* :wait-interpolation)
+   (ik :fr #f(10 0 20))
+   (ik :bl #f(10 0 20))
+   (ik :fl #f(0 0 10))
+   (ik :br #f(0 0 10))
+   (send *ri* :angle-vector (send *robot* :angle-vector) 100)
+   (send *ri* :wait-interpolation)
+   (ik :fr #f(-10 0 0))
+   (ik :bl #f(-10 0 0))
+   (send *ri* :angle-vector (send *robot* :angle-vector) 100)
+   (send *ri* :wait-interpolation)
+   (ik :fl #f(10 0 20))
+   (ik :br #f(10 0 20))
+   (ik :fr #f(0 0 10))
+   (ik :bl #f(0 0 10))
+   (send *ri* :angle-vector (send *robot* :angle-vector) 100)
+   (send *ri* :wait-interpolation)
+   (ik :fl #f(-10 0 0))
+   (ik :br #f(-10 0 0))
+   (send *ri* :angle-vector (send *robot* :angle-vector) 100)
+   (send *ri* :wait-interpolation)
+   ))
+
+(defun one-walk();;一足ずつ
+  (send *robot* :newcoords (make-coords))
+  (send *robot* :larm :angle-vector #f(0 0 0 0 0 0))
+  (send *robot* :rarm :angle-vector #f(0 0 0 0 0 0))
+  (send *robot* :lleg :angle-vector #f(0 0 0 0 0 0))
+  (send *robot* :rleg :angle-vector #f(0 0 0 0 0 0))
+  (ik :fr #f(10 0 20))
+  (ik :fl #f(10 0 20))
+  (ik :br #f(10 0 -20))
+  (ik :bl #f(10 0 -20))
+  (send *ri* :angle-vector (send *robot* :angle-vector) 100)
+  (send *ri* :wait-interpolation)
+  (dolist (limb (list :fr :bl :fl :br))
+    (ik limb #f(10 0 20))
+    (send *ri* :angle-vector (send *robot* :angle-vector) 100)
+    (send *ri* :wait-interpolation)
+    (ik limb #f(-10 0 0))
+    (send *ri* :angle-vector (send *robot* :angle-vector) 100)
+    (send *ri* :wait-interpolation)
+    )
+  )
+
+(defun one-walk2();;対角の足を同時に動かす
+  (send *robot* :newcoords (make-coords))
+  ;;
+  (send *robot* :larm :angle-vector #f(0 0 0 0 0 0))
+  (send *robot* :rarm :angle-vector #f(0 0 0 0 0 0))
+  (send *robot* :lleg :angle-vector #f(0 0 0 0 0 0))
+  (send *robot* :rleg :angle-vector #f(0 0 0 0 0 0))
+  (ik :fr #f(10 0 20))
+  (ik :fl #f(10 0 20))
+  (ik :br #f(10 0 -20))
+  (ik :bl #f(10 0 -20))
+  (send *ri* :angle-vector (send *robot* :angle-vector) 100)
+  (send *ri* :wait-interpolation)
+  (ik :fr #f(10 0 20))
+  (ik :bl #f(10 0 20))
+  (ik :fl #f(0 0 10))
+  (ik :br #f(0 0 10))
+  (send *ri* :angle-vector (send *robot* :angle-vector) 100)
+  (send *ri* :wait-interpolation)
+  (ik :fr #f(-10 0 0))
+  (ik :bl #f(-10 0 0))
+  (send *ri* :angle-vector (send *robot* :angle-vector) 100)
+  (send *ri* :wait-interpolation)
+  (ik :fl #f(10 0 20))
+  (ik :br #f(10 0 20))
+  (ik :fr #f(0 0 10))
+  (ik :bl #f(0 0 10))
+  (send *ri* :angle-vector (send *robot* :angle-vector) 100)
+  (send *ri* :wait-interpolation)
+  (ik :fl #f(-10 0 0))
+  (ik :br #f(-10 0 0))
+  (send *ri* :angle-vector (send *robot* :angle-vector) 100)
+  (send *ri* :wait-interpolation)
+  )
+
+
+
 
 (defun obj-head-ik()
   ;; if dx > dy,dz rot
   (let* ((pos (send *obj-bbox* :pose :position))
-         (x (+ (* 1000 (send pos :x)) 30))
+         (x (+ (* 1000 (send pos :x)) -20));;30
          (y (* 1000 (send pos :y)))
-         (z (- (* 1000 (send pos :z)) 50))
+         (z (- (* 1000 (send pos :z)) 30));;50
          )
     (send *robot* :inverse-kinematics
           (make-coords :pos (float-vector x y z)
-                       :rot (rpy-matrix 0 -1.57 0))
+                       :rot (rpy-matrix 0 +1.57 0))
           :move-target (send *robot* :head :end-coords)
           :link-list (send *robot* :link-list (send (send *robot* :head :end-coords) :parent))
-          :rotation-axis t
-          :debug-view :no-message)
+          :rotation-axis :z
+          :debug-view :no-message
+          :warnp nil :dump-command nil
+          )
     )
-
-  (head-open 70)
   )
 
 (defun table-demo()
-  (look-forward3)
-  (obj-bbox-spin-once)
-  (head-open 70)
-  (send *ri* :angle-vector (send *robot* :angle-vector) 100)
+  ;;look side
+  (send *robot* :angle-vector #f(-40.0 0.0 -80.0 80.0 0.0 80.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0))
+  (ik :fr #f(10 0 20))
+  (ik :fl #f(10 0 20))
+  (ik :br #f(10 0 -20))
+  (ik :bl #f(10 0 -20))
+  (send *ri* :angle-vector (send *robot* :angle-vector) 3000)
+
+  (setq *obj-head-ik-av* nil)
+  (while (not *obj-head-ik-av*)
+    (one-walk2)
+    (obj-bbox-spin-once)
+    (setq *obj-head-ik-av* (obj-head-ik))
+    )
+
+  (send *robot* :head :angle-vector #f(-47.8584 -9.03955 -42.3663 58.8687 10.6443 70.937 16.5931 44.7053 -18.0727))
+  (head-open-close 70)
+  (send *ri* :angle-vector (send *robot* :angle-vector) 2000)
   (send *ri* :wait-interpolation)
-  (obj-head-ik)
+
+  (send *robot* :angle-vector *obj-head-ik-av*)
+  (head-open-close 70)
+  (send *ri* :angle-vector (send *robot* :angle-vector) 3000)
+  (send *ri* :wait-interpolation)
+
+  (head-open-close 0)
   (send *ri* :angle-vector (send *robot* :angle-vector) 100)
   (send *ri* :wait-interpolation)
 
-  (head-close 0)
-  (send *ri* :angle-vector (send *robot* :angle-vector) 100)
+  ;; (send *robot* :head :angle-vector #f(-170.0 -20.0 -70.0 80.0 0.0 80.0 20.0 0.0 0.0))
+  (send *robot* :head :angle-vector #f(-178.0 3.74413 -64.0953 76.9229 8.60041 46.3214 29.1646 3.52934 -17.8613))
+  (send *ri* :angle-vector (send *robot* :angle-vector) 3000)
   (send *ri* :wait-interpolation)
 
-  (re)
+  (head-open-close 90)
+  (send *ri* :angle-vector (send *robot* :angle-vector) 3000)
   (send *ri* :wait-interpolation)
-  
-  (send *robot* :head :angle-vector #f(0 0 0 -50 0 -90 0 0 0))
-  (send *ri* :angle-vector (send *robot* :angle-vector) 1000)
+
+  ;;(send *robot* :head :angle-vector #f(-161.607 -15.9304 -15.9827 16.0957 -3.07021 74.2216 35.5821 70.4809 70.0))
+  (send *robot* :head :angle-vector #f(-178.0 10.6614 -11.3082 30.9044 13.7562 27.5701 16.3527 78.5257 86.6596))
+  (send *ri* :angle-vector (send *robot* :angle-vector) 3000)
   (send *ri* :wait-interpolation)
-  
-  (send *robot* :head :angle-vector #f(0 0 0 -50 0 -90 0 0 30))
-  (send *ri* :angle-vector (send *robot* :angle-vector) 1000)
+
+  (send *robot* :head :angle-vector #f(-178 0 0 0 0 0 0 0 90))
+  (send *ri* :angle-vector (send *robot* :angle-vector) 4000)
   (send *ri* :wait-interpolation)
+
+  ;;二本目
+  (send *robot* :head :angle-vector #f(-40.0 0.0 -80.0 80.0 0.0 80.0 0.0 0.0 0.0))
+  (send *ri* :angle-vector (send *robot* :angle-vector) 3000)
+
+  (setq *obj-head-ik-av* nil)
+  (while (not *obj-head-ik-av*)
+    (one-walk2)
+    (obj-bbox-spin-once)
+    (setq *obj-head-ik-av* (obj-head-ik))
+    )
 
   )
-
-
-
-
 
 ;;;;
 (defvar *obj-bbox* nil)
@@ -303,68 +320,3 @@
 (ros::subscribe "/rgbcolorfilter/boxes"
                 jsk_recognition_msgs::BoundingBoxArray
                 #'obj_bbox_callback)
-
-
-(defun go-to-obj()
-  (look-forward2)
-  (obj-bbox-spin-once)
-  (while (> (- (send *obj-bbox* :pose :position :z)
-               (* 0.5 (send *obj-bbox* :dimensions :z))
-               )
-            0.38
-            )
-       (send *robot* :larm :angle-vector #f(0 0 0 0 0 0))
-       (send *robot* :rarm :angle-vector #f(0 0 0 0 0 0))
-       (send *robot* :lleg :angle-vector #f(0 0 0 0 0 0))
-       (send *robot* :rleg :angle-vector #f(0 0 0 0 0 0))
-       (ik :fr #f(10 0 20))
-       (ik :fl #f(10 0 20))
-       (ik :br #f(10 0 -20))
-       (ik :bl #f(10 0 -20))
-       (send *ri* :angle-vector (send *robot* :angle-vector) 100)
-       (send *ri* :wait-interpolation)
-       (dolist (limb (list :fr :bl :fl :br))
-         (ik limb #f(10 0 20))
-         (send *ri* :angle-vector (send *robot* :angle-vector) 100)
-         (send *ri* :wait-interpolation)
-         (ik limb #f(-10 0 0))
-         (send *ri* :angle-vector (send *robot* :angle-vector) 100)
-         (send *ri* :wait-interpolation)
-         )
-       (obj-bbox-spin-once)
-       )
-  )
-
-(defun pick-and-place()
-
-  (send *robot* :angle-vector #f(0.0 90.0 0.0 40.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0))
-  (send *ri* :angle-vector (send *robot* :angle-vector) 5000)
-  (send *ri* :wait-interpolation)
-  
-  (head-close)
-  (send *ri* :angle-vector (send *robot* :angle-vector) 5000)
-  (send *ri* :wait-interpolation)
-
-  (send *robot* :angle-vector #f(0.0 0.0 0.0 40.0 0.0 40.0 0.0 0.0 -30.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0))
-  (send *ri* :angle-vector (send *robot* :angle-vector) 5000)
-  (send *ri* :wait-interpolation)
-
-  (neck-rot)
-  (send *ri* :angle-vector (send *robot* :angle-vector) 10000)
-  (send *ri* :wait-interpolation)
-
-  (send *robot* :angle-vector #f(178.0 0.0 0.0 10.0 0.0 90.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0))
-  (send *ri* :angle-vector (send *robot* :angle-vector) 3000)
-  (send *ri* :wait-interpolation)
-
-  (send *robot* :angle-vector #f(178.0 0.0 0.0 40.0 0.0 90.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0))
-  (send *ri* :angle-vector (send *robot* :angle-vector) 3000)
-  (send *ri* :wait-interpolation)
-  
-  
-  )
-
-(defun demo()
-  (go-to-obj)
-  (pick-and-place)
-  )
