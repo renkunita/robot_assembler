@@ -1,4 +1,5 @@
 
+
 (load "package://robot_assembler/test/4leg_1neck_robot.l")
 (load "package://robot_assembler/euslisp/assembled-robot-interface.l")
 (ros::roseus-add-msgs "jsk_recognition_msgs")
@@ -204,7 +205,40 @@
   (send *ri* :wait-interpolation)
   )
 
-
+(defun one-walk3();;対角の足を同時に動かす
+  (send *robot* :newcoords (make-coords))
+  ;;
+  (send *robot* :larm :angle-vector #f(0 0 0 0 0 0))
+  (send *robot* :rarm :angle-vector #f(0 0 0 0 0 0))
+  (send *robot* :lleg :angle-vector #f(0 0 0 0 0 0))
+  (send *robot* :rleg :angle-vector #f(0 0 0 0 0 0))
+  (ik :fr #f(10 0 10))
+  (ik :fl #f(10 0 10))
+  (ik :br #f(10 0 -20))
+  (ik :bl #f(10 0 -20))
+  (send *ri* :angle-vector (send *robot* :angle-vector) 100)
+  (send *ri* :wait-interpolation)
+  (ik :fr #f(10 0 35))
+  (ik :bl #f(10 0 35))
+  (ik :fl #f(0 0 10))
+  (ik :br #f(0 0 10))
+  (send *ri* :angle-vector (send *robot* :angle-vector) 100)
+  (send *ri* :wait-interpolation)
+  (ik :fr #f(-10 0 0))
+  (ik :bl #f(-10 0 0))
+  (send *ri* :angle-vector (send *robot* :angle-vector) 100)
+  (send *ri* :wait-interpolation)
+  (ik :fl #f(10 0 35))
+  (ik :br #f(10 0 35))
+  (ik :fr #f(0 0 10))
+  (ik :bl #f(0 0 10))
+  (send *ri* :angle-vector (send *robot* :angle-vector) 100)
+  (send *ri* :wait-interpolation)
+  (ik :fl #f(-10 0 0))
+  (ik :br #f(-10 0 0))
+  (send *ri* :angle-vector (send *robot* :angle-vector) 100)
+  (send *ri* :wait-interpolation)
+  )
 
 
 (defun obj-head-ik()
@@ -237,53 +271,104 @@
 
   (setq *obj-head-ik-av* nil)
   (while (not *obj-head-ik-av*)
-    (one-walk2)
+    (one-walk3)
     (obj-bbox-spin-once)
     (setq *obj-head-ik-av* (obj-head-ik))
     )
-
+  ;;机との干渉回避
   (send *robot* :head :angle-vector #f(-47.8584 -9.03955 -42.3663 58.8687 10.6443 70.937 16.5931 44.7053 -18.0727))
   (head-open-close 70)
   (send *ri* :angle-vector (send *robot* :angle-vector) 2000)
   (send *ri* :wait-interpolation)
-
+  ;;grasp pose
   (send *robot* :angle-vector *obj-head-ik-av*)
   (head-open-close 70)
   (send *ri* :angle-vector (send *robot* :angle-vector) 3000)
   (send *ri* :wait-interpolation)
-
+  ;;grasp
   (head-open-close 0)
   (send *ri* :angle-vector (send *robot* :angle-vector) 100)
   (send *ri* :wait-interpolation)
-
-  ;; (send *robot* :head :angle-vector #f(-170.0 -20.0 -70.0 80.0 0.0 80.0 20.0 0.0 0.0))
+  ;;背中の上まで運ぶ
   (send *robot* :head :angle-vector #f(-178.0 3.74413 -64.0953 76.9229 8.60041 46.3214 29.1646 3.52934 -17.8613))
   (send *ri* :angle-vector (send *robot* :angle-vector) 3000)
   (send *ri* :wait-interpolation)
-
+  ;;release
   (head-open-close 90)
   (send *ri* :angle-vector (send *robot* :angle-vector) 3000)
   (send *ri* :wait-interpolation)
-
-  ;;(send *robot* :head :angle-vector #f(-161.607 -15.9304 -15.9827 16.0957 -3.07021 74.2216 35.5821 70.4809 70.0))
+  ;;物体を倒さないように戻す
   (send *robot* :head :angle-vector #f(-178.0 10.6614 -11.3082 30.9044 13.7562 27.5701 16.3527 78.5257 86.6596))
   (send *ri* :angle-vector (send *robot* :angle-vector) 3000)
   (send *ri* :wait-interpolation)
-
+  ;;
   (send *robot* :head :angle-vector #f(-178 0 0 0 0 0 0 0 90))
   (send *ri* :angle-vector (send *robot* :angle-vector) 4000)
   (send *ri* :wait-interpolation)
 
   ;;二本目
-  (send *robot* :head :angle-vector #f(-40.0 0.0 -80.0 80.0 0.0 80.0 0.0 0.0 0.0))
+  ;; (send *robot* :head :angle-vector #f(-40.0 0.0 -80.0 80.0 0.0 80.0 0.0 0.0 0.0))
+  (send *robot* :head :angle-vector #f(0.0 0.0 -80.0 80.0 0.0 80.0 0.0 0.0 0.0))
   (send *ri* :angle-vector (send *robot* :angle-vector) 3000)
 
   (setq *obj-head-ik-av* nil)
   (while (not *obj-head-ik-av*)
-    (one-walk2)
+    (one-walk3)
     (obj-bbox-spin-once)
     (setq *obj-head-ik-av* (obj-head-ik))
     )
+    ;;机との干渉回避
+  (send *robot* :head :angle-vector #f(-47.8584 -9.03955 -42.3663 58.8687 10.6443 70.937 16.5931 44.7053 -18.0727))
+  (head-open-close 70)
+  (send *ri* :angle-vector (send *robot* :angle-vector) 2000)
+  (send *ri* :wait-interpolation)
+  ;;grasp pose
+  (send *robot* :angle-vector *obj-head-ik-av*)
+  (head-open-close 70)
+  (send *ri* :angle-vector (send *robot* :angle-vector) 3000)
+  (send *ri* :wait-interpolation)
+  ;;grasp
+  (head-open-close 0)
+  (send *ri* :angle-vector (send *robot* :angle-vector) 100)
+  (send *ri* :wait-interpolation)
+  ;;前に持っていく
+  (send *robot* :head :angle-vector #f(0 70 0 30 0 30 0 0 0))
+  (send *ri* :angle-vector (send *robot* :angle-vector) 3000)
+  (send *ri* :wait-interpolation)
+  ;;
+  (dotimes (i 5)
+    (one-walk3)
+    )
+  ;;release
+  (head-open-close 80)
+  (send *ri* :angle-vector (send *robot* :angle-vector) 3000)
+  (send *ri* :wait-interpolation)
+
+  ;;
+  ;;背中の上
+  (send *robot* :head :angle-vector #f(-128.775 -14.8628 -74.8032 99.002 10.566 82.1315 29.0982 1.63397 94.9764))
+  (send *ri* :angle-vector (send *robot* :angle-vector) 5000)
+  (send *ri* :wait-interpolation)
+  ;;
+  (send *robot* :head :angle-vector #f(-178.0 3.74413 -64.0953 76.9229 8.60041 46.3214 29.1646 3.52934 90))
+  (send *ri* :angle-vector (send *robot* :angle-vector) 3000)
+  (send *ri* :wait-interpolation)
+  ;;grasp
+  (head-open-close 0)
+  (send *ri* :angle-vector (send *robot* :angle-vector) 3000)
+  (send *ri* :wait-interpolation)
+  ;;
+  (send *robot* :head :angle-vector #f(-178.0 0 0 0 0 0 0 0 0))
+  (send *ri* :angle-vector (send *robot* :angle-vector) 3000)
+  (send *ri* :wait-interpolation)
+  ;;前に持っていく
+  (send *robot* :head :angle-vector #f(0 70 0 30 0 30 0 0 0))
+  (send *ri* :angle-vector (send *robot* :angle-vector) 3000)
+  (send *ri* :wait-interpolation)
+  ;;release
+  (head-open-close 80)
+  (send *ri* :angle-vector (send *robot* :angle-vector) 3000)
+  (send *ri* :wait-interpolation)
 
   )
 
